@@ -1,0 +1,17 @@
+{
+  "canisters": {
+    "icp-ethereum-wallet-backend": {
+      "candid": "src/icp-ethereum-wallet-backend/icp-ethereum-wallet-backend.did",
+      "package": "icp-ethereum-wallet-backend",
+      "type": "rust"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}

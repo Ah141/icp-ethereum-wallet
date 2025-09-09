@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "src/icp-ethereum-wallet-backend"
+]
+resolver = "2"
