@@ -29,3 +29,18 @@ impl AsRef<PublicKey> for EcdsaPublicKey {
         &self.public_key
     }
 }
+
+impl From<EcdsaPublicKeyResponse> for EcdsaPublicKey {
+    /// Converts an `EcdsaPublicKeyResponse` (from IC management canister)
+    /// into a usable `EcdsaPublicKey` struct.
+    fn from(value: EcdsaPublicKeyResponse) -> Self {
+        let public_key =
+            PublicKey::deserialize_sec1(&value.public_key).expect("Failed to deserialize public key");
+
+        EcdsaPublicKey {
+            public_key,
+            chain_code: value.chain_code,
+        }
+    }
+}
+
