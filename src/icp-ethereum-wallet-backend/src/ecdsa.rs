@@ -44,3 +44,23 @@ impl From<EcdsaPublicKeyResponse> for EcdsaPublicKey {
     }
 }
 
+impl From<&EcdsaPublicKey> for Address {
+    /// Converts an `EcdsaPublicKey` into an Ethereum `Address`.
+    /// Uses the standard Ethereum rule: Keccak256(uncompressed_pubkey[1..]) → last 20 bytes.
+    fn from(value: &EcdsaPublicKey) -> Self {
+        // Serialize public key in uncompressed SEC1 format (65 bytes)
+        let key_bytes = value.as_ref().serialize_sec1(false);
+
+        // Sanity check: first byte must be 0x04 for uncompressed keys
+        debug_assert_eq!(key_bytes[0], 0x04, "Uncompressed public key should start with 0x04");
+
+        // Hash the X and Y coordinates with Keccak256
+        let hash = ic_sha3::Keccak256::hash(&key_bytes[1..]);
+
+        // Take the last 20 bytes of the hash as the Ethereum address
+        let mut addr = [0u8; 20];
+        addr.copy_from_slice(&hash[12..32]);
+
+        Address::new(addr)
+    }
+}
