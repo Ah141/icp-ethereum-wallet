@@ -22,3 +22,10 @@ impl EcdsaPublicKey {
         }
     }
 }
+
+impl AsRef<PublicKey> for EcdsaPublicKey {
+    /// Allows `&EcdsaPublicKey` to be automatically converted into `&PublicKey`.
+    fn as_ref(&self) -> &PublicKey {
+        &self.public_key
+    }
+}
