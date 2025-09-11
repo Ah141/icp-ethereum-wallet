@@ -25,3 +25,12 @@ where
 {
     STATE.with(|s| f(s.borrow_mut().deref_mut()))
 }
+
+
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct State {
+    ethereum_network: EthereumNetwork,
+    ecdsa_key_name: EcdsaKeyName,
+    ecdsa_public_key: option<EcdsaPublicKey>
+}
+
