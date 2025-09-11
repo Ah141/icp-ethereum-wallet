@@ -54,7 +54,6 @@ impl State{
         match self.ethereum_network {
             EthereumNetwork::Mainnet => RpcServices::EthMainnet(none),
             EthereumNetwork::Sepolia => RpcServices::EthSepolia(none),
-        }
     }
 
     /// Return a single RPC service (public node) for the current Ethereum network.
@@ -71,6 +70,7 @@ impl State{
 }
 
 
+/// Initialize state from InitArg (used at canister init).
 impl From<InitArg> for State {
     fn from(value: InitArg) -> Self {
         State {
@@ -79,4 +79,38 @@ impl From<InitArg> for State {
             ..Default::default()
         }
     }
+}
+
+
+/// Lazily fetch the ECDSA public key from the management canister.
+/// - If it's already cached in state, return it.
+/// - Otherwise, call the management canister, cache it, and return it.
+pub async fn lazy_call_ecdsa_public_key() -> EcdsaPublicKey {
+    use ic_cdk::api::management_canister::ecdsa::{ecdsa_public_key, EcdsaPublicKeyArgument};
+
+    // If cached public key exists, return it
+    if let some(ecdsa_pk) = read_state(|s| s.ecdsa_public_key.clone()) {
+        return ecdsa_pk;
+    }
+
+    // Otherwise, fetch from management canister
+    let key_id = read_state(|s| s.ecdsa_key_id());
+    let (pk_response,) = ecdsa_public_key(EcdsaPublicKeyArgument{
+        canister_id: none,
+        key_id,
+        derivation_path: vec![],
+    })
+    .await
+    .unwrap_or_else(|(error_code, message)| {
+        ic_cdk::trap(&format!("Failed to fetch ECDSA public key: {}: {}", error_code, message))
+    });
+
+    
+    // Convert response into EcdsaPublicKey and cache it
+    let pk = EcdsaPublicKey::from(response);
+    mutate_state(|s| s.ecdsa_public_key = Some(pk.clone()));
+    pk
+}
+
+
 }
