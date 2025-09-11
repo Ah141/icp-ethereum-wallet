@@ -56,7 +56,7 @@ impl State{
             EthereumNetwork::Sepolia => RpcServices::EthSepolia(none),
         }
     }
-    
+
     /// Return a single RPC service (public node) for the current Ethereum network.
     pub fn singel_rpc_service(&self) -> RpcServices {
         match self.ethereum_network {
@@ -70,3 +70,13 @@ impl State{
     }
 }
 
+
+impl From<InitArg> for State {
+    fn from(value: InitArg) -> Self {
+        State {
+            ethereum_network: value.ethereum_network.unwrap_or_default(),
+            ecdsa_key_name: value.ecdsa_key_name.unwrap_or_default(),
+            ..Default::default()
+        }
+    }
+}
