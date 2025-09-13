@@ -58,4 +58,16 @@ impl EthereumWallet {
             .verify_signature_prehashed(message_hash, signature)
         )
     }
+
+    fn derive_public_key(owner: &Principal, public_key: &EcdsaPublicKey) -> EcdsaPublicKey {
+    use ic_secp256k1::{DerivationIndex, DerivationPath};
+    let derivation_path = DerivationPath::new(
+        derivation_path(owner)
+            .into_iter()
+            .map(DerivationIndex)
+            .collect(),
+    );
+    public_key.derive_new_public_key(&derivation_path)
+}
+
 }
