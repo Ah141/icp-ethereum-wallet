@@ -30,3 +30,16 @@ impl EthereumWallet {
     pub fn ethereum_address(&self) -> Address {
         Address::from(&self.derived_public_key)
     }
+
+    pub async fn sign(&self, message_hash: [u8; 32]) -> ([u8; 64], RecoveryId) {
+        use ic_cdk::api::management_canister::ecdsa::SignWithEcdsaArgument;
+        let derivation_path = derivation_path(&self.owner);
+        let key_id = read_state(|s| s.ecdsa_key_id);
+        let (resualt,) = ic_cdk::api::management_canister::ecdsa::sign_with_ecdsa(SignWithEcdsaArgument {
+            derivation_path: derivation_path.to_vec(),
+            message_hash,
+            key_id,
+        })
+        .await
+        .expect("ecdsa sign failed");
+    
