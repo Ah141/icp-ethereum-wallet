@@ -42,4 +42,20 @@ impl EthereumWallet {
         })
         .await
         .expect("ecdsa sign failed");
-    
+        let signature = <[u8; 64]>::try_from(resualt.signature).unwrap_or_else(|_| {
+            panic!(
+                "BUG: invalid signature from management canister. Expected 64 bytes but got {} bytes",
+                signature_length
+            )
+        });
+        let recovery_id = self.compute_recovery_id(&message_hash, &signature);
+    }
+
+    pub fn capture_recovery_id(&self, message_hash: &[u8], signature: &[u8]) -> RecoveryId {
+        use alloy_primitives::hex;
+        assert!(
+            self.as_ref()
+            .verify_signature_prehashed(message_hash, signature)
+        )
+    }
+}
