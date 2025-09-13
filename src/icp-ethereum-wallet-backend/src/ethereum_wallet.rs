@@ -16,3 +16,17 @@ impl AsRef<PublicKey> for EthereumWallet {
         self.derived_public_key.as_ref()
     }
 }
+
+impl EthereumWallet {
+    pub async fn new(owner: Principal) -> Self {
+        let derive_public_key = derive_new_public_key(&owner, lazy_call_ecdsa_public_key().await);
+        self {
+            owner,
+            derived_public_key: derive_public_key,
+        }
+
+    }
+
+    pub fn ethereum_address(&self) -> Address {
+        Address::from(&self.derived_public_key)
+    }
