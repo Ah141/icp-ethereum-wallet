@@ -70,4 +70,16 @@ impl EthereumWallet {
     public_key.derive_new_public_key(&derivation_path)
 }
 
+fn derivation_path(owner: &Principal) -> Vec<Vec<u8>> {
+    const SCHEMA_V1: u8 = 1;
+    [
+        ByteBuf::from(vec![SCHEMA_V1]),
+        ByteBuf::from(owner.as_slice().to_vec()),
+    ]
+    .iter()
+    .map(|x| x.to_vec())
+    .collect()
+}
+
+
 }
