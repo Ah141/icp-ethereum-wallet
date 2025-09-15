@@ -38,3 +38,10 @@ pub fn init(maybe_init: Option<InitArg>) {
     }
 }
 
+#[update]
+pub async fn ethereum_address(owner: Option<Principal>) -> String {
+    let caller = validate_caller_not_anonymous();
+    let owner = owner.unwrap_or(caller);
+    let wallet = EthereumWallet::new(owner).await;
+    wallet.ethereum_address().to_string()
+}
