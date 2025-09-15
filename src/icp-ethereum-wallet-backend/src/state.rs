@@ -35,7 +35,7 @@ pub struct State {
     /// The ECDSA key name used for signing.
     ecdsa_key_name: EcdsaKeyName,
     /// Cached public key derived from the ECDSA key.
-    ecdsa_public_key: option<EcdsaPublicKey>
+    ecdsa_public_key: Option<EcdsaPublicKey>
 }
 
 
