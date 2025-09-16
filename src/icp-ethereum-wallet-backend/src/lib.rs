@@ -207,3 +207,9 @@ fn estimate_transaction_fees() -> (u128, u128, u128) {
     const MAX_PRIORITY_FEE_PER_GAS: u128 = 1_500_000_000;
     (GAS_LIMIT, MAX_FEE_PER_GAS, MAX_PRIORITY_FEE_PER_GAS)
 }
+
+#[derive(CandidType, Deserialize, Debug, Default, PartialEq, Eq)]
+pub struct InitArg {
+    pub ethereum_network: Option<EthereumNetwork>,
+    pub ecdsa_key_name: Option<EcdsaKeyName>,
+}
