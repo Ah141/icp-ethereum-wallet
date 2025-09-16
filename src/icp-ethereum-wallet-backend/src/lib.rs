@@ -245,3 +245,12 @@ impl From<&EcdsaKeyName> for EcdsaKeyId {
         }
     }
 }
+
+
+pub fn validate_caller_not_anonymous() -> Principal {
+    let principal = ic_cdk::caller();
+    if principal == Principal::anonymous() {
+        panic!("anonymous principal is not allowed");
+    }
+    principal
+}
