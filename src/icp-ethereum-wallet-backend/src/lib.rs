@@ -254,3 +254,23 @@ pub fn validate_caller_not_anonymous() -> Principal {
     }
     principal
 }
+
+
+fn nat_to_u64(nat: Nat) -> u64 {
+    use num_traits::cast::ToPrimitive;
+    nat.0
+        .to_u64()
+        .unwrap_or_else(|| ic_cdk::trap(&format!("Nat {} doesn't fit into a u64", nat)))
+}
+
+fn nat_to_u256(value: Nat) -> U256 {
+    let value_bytes = value.0.to_bytes_be();
+    assert!(
+        value_bytes.len() <= 32,
+        "Nat does not fit in a U256: {}",
+        value
+    );
+    let mut value_u256 = [0u8; 32];
+    value_u256[32 - value_bytes.len()..].copy_from_slice(&value_bytes);
+    U256::from_be_bytes(value_u256)
+}
