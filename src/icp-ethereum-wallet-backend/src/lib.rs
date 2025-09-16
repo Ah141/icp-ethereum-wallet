@@ -88,3 +88,36 @@ pub async fn get_balance(address: Option<String>) -> Nat {
     // Remove the "0x" prefix before converting to a decimal number.
     Nat(BigUint::from_str_radix(&hex_balance[2..], 16).unwrap())
 }
+
+
+#[update]
+pub async fn transaction_count(owner: Option<Principal>, block: Option<BlockTag>) -> Nat {
+    let caller = validate_caller_not_anonymous();
+    let owner = owner.unwrap_or(caller);
+    let wallet = EthereumWallet::new(owner).await;
+    let rpc_services = read_state(|s| s.evm_rpc_services());
+    let args = GetTransactionCountArgs {
+        address: wallet.ethereum_address().to_string(),
+        block: block.unwrap_or(BlockTag::Finalized),
+    };
+    let (result,) = EVM_RPC
+        .eth_get_transaction_count(rpc_services, None, args.clone(), 2_000_000_000_u128)
+        .await
+        .unwrap_or_else(|e| {
+            panic!(
+                "failed to get transaction count for {:?}, error: {:?}",
+                args, e
+            )
+        });
+    match result {
+        MultiGetTransactionCountResult::Consistent(consistent_result) => match consistent_result {
+            GetTransactionCountResult::Ok(count) => count,
+            GetTransactionCountResult::Err(error) => {
+                ic_cdk::trap(&format!("failed to get transaction count for {:?}, error: {:?}",args, error))
+            }
+        },
+        MultiGetTransactionCountResult::Inconsistent(inconsistent_results) => {
+            ic_cdk::trap(&format!("inconsistent results when retrieving transaction count for {:?}. Received results: {:?}", args, inconsistent_results))
+        }
+    }
+}
