@@ -213,3 +213,13 @@ pub struct InitArg {
     pub ethereum_network: Option<EthereumNetwork>,
     pub ecdsa_key_name: Option<EcdsaKeyName>,
 }
+
+
+impl EthereumNetwork {
+    pub fn chain_id(&self) -> u64 {
+        match self {
+            EthereumNetwork::Mainnet => 1,
+            EthereumNetwork::Sepolia => 11155111,
+        }
+    }
+}
