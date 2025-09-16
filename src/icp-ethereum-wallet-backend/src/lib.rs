@@ -121,3 +121,76 @@ pub async fn transaction_count(owner: Option<Principal>, block: Option<BlockTag>
         }
     }
 }
+
+
+#[update]
+pub async fn send_eth(to: String, amount: Nat) -> String {
+    use alloy_eips::eip2718::Encodable2718;
+
+    let caller = validate_caller_not_anonymous();
+    let _to_address = Address::from_str(&to).unwrap_or_else(|e| {
+        ic_cdk::trap(&format!("failed to parse the recipient address: {:?}", e))
+    });
+    let chain_id = read_state(|s| s.ethereum_network().chain_id());
+    let nonce = nat_to_u64(transaction_count(Some(caller), Some(BlockTag::Latest)).await);
+    let (gas_limit, max_fee_per_gas, max_priority_fee_per_gas) = estimate_transaction_fees();
+
+    let transaction = TxEip1559 {
+        chain_id,
+        nonce,
+        gas_limit,
+        max_fee_per_gas,
+        max_priority_fee_per_gas,
+        to: TxKind::Call(to.parse().expect("failed to parse recipient address")),
+        value: nat_to_u256(amount),
+        access_list: Default::default(),
+        input: Default::default(),
+    };
+
+    let wallet = EthereumWallet::new(caller).await;
+    let tx_hash = transaction.signature_hash().0;
+    let (raw_signature, recovery_id) = wallet.sign_with_ecdsa(tx_hash).await;
+    let signature = Signature::from_bytes_and_parity(&raw_signature, recovery_id.is_y_odd())
+        .expect("BUG: failed to create a signature");
+    let signed_tx = transaction.into_signed(signature);
+
+    let raw_transaction_hash = *signed_tx.hash();
+    let mut tx_bytes: Vec<u8> = vec![];
+    TxEnvelope::from(signed_tx).encode_2718(&mut tx_bytes);
+    let raw_transaction_hex = format!("0x{}", hex::encode(&tx_bytes));
+    ic_cdk::println!(
+        "Sending raw transaction hex {} with transaction hash {}",
+        raw_transaction_hex,
+        raw_transaction_hash
+    );
+    // The canister is sending a signed statement, meaning a malicious provider could only affect availability.
+    // For demonstration purposes, the canister uses a single provider to send the signed transaction,
+    // but in production multiple providers (e.g., using a round-robin strategy) should be used to avoid a single point of failure.
+    let single_rpc_service = read_state(|s| s.single_evm_rpc_service());
+    let (result,) = EVM_RPC
+        .eth_send_raw_transaction(
+            single_rpc_service,
+            None,
+            raw_transaction_hex.clone(),
+            2_000_000_000_u128,
+        )
+        .await
+        .unwrap_or_else(|e| {
+            panic!(
+                "failed to send raw transaction {}, error: {:?}",
+                raw_transaction_hex, e
+            )
+        });
+        
+    ic_cdk::println!(
+        "Result of sending raw transaction {}: {:?}. \
+    Due to the replicated nature of HTTPs outcalls, an error such as transaction already known or nonce too low could be reported, \
+    even though the transaction was successfully sent. \
+    Check whether the transaction appears on Etherscan or check that the transaction count on \
+    that address at latest block height did increase.",
+        raw_transaction_hex,
+        result
+    );
+
+    raw_transaction_hash.to_string()
+}
